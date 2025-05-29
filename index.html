@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DecorAI - Sua Casa com Estilo</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      text-align: center;
+      padding: 20px;
+      background-color: #f8f9fa;
+      color: #333;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    h1 {
+      color: #4a6fa5;
+      margin-bottom: 10px;
+    }
+    .container {
+      background-color: white;
+      border-radius: 15px;
+      padding: 25px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+      margin-top: 20px;
+    }
+    button {
+      background-color: #4a6fa5;
+      color: white;
+      border: none;
+      padding: 12px 25px;
+      border-radius: 25px;
+      cursor: pointer;
+      font-size: 16px;
+      transition: all 0.3s;
+      margin-top: 15px;
+    }
+    button:hover {
+      background-color: #3a5a80;
+      transform: translateY(-2px);
+    }
+    select, input {
+      padding: 10px;
+      border-radius: 5px;
+      border: 1px solid #ddd;
+      margin: 10px 0;
+      width: 80%;
+      max-width: 300px;
+    }
+    #resultado {
+      margin-top: 30px;
+    }
+    .resultado-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .resultado-img {
+      max-width: 100%;
+      border-radius: 10px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+    .loading {
+      display: inline-block;
+      width: 50px;
+      height: 50px;
+      border: 5px solid rgba(74,111,165,0.3);
+      border-radius: 50%;
+      border-top-color: #4a6fa5;
+      animation: spin 1s ease-in-out infinite;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    .explicacao {
+      background-color: #f0f4f8;
+      padding: 15px;
+      border-radius: 10px;
+      margin-top: 20px;
+      text-align: left;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+    .historico {
+      margin-top: 30px;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 15px;
+    }
+    .historico-item {
+      width: 120px;
+      cursor: pointer;
+      transition: transform 0.3s;
+    }
+    .historico-item:hover {
+      transform: scale(1.05);
+    }
+    .historico-item img {
+      width: 100%;
+      border-radius: 8px;
+    }
+    .camera-container {
+      position: relative;
+      width: 100%;
+      max-width: 500px;
+      margin: 0 auto;
+    }
+    #camera-view {
+      width: 100%;
+      border-radius: 10px;
+      display: none;
+    }
+    .capture-btn {
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background-color: rgba(255,255,255,0.8);
+      border-radius: 50%;
+      width: 60px;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    }
+    .capture-btn::after {
+      content: '';
+      display: block;
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background-color: white;
+      border: 2px solid #4a6fa5;
+    }
+    .wall-indicator {
+      margin: 15px 0;
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+    }
+    .wall-dot {
+      width: 15px;
+      height: 15px;
+      border-radius: 50%;
+      background-color: #ddd;
+      transition: all 0.3s;
+    }
+    .wall-dot.active {
+      background-color: #4a6fa5;
+      transform: scale(1.2);
+    }
+    .wall-preview {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 10px;
+      margin: 15px 0;
+    }
+    .wall-preview-item {
+      width: 48%;
+      position: relative;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .wall-preview-item img {
+      width: 100%;
+      border-radius: 8px;
+    }
+    .wall-preview-item .wall-label {
+      position: absolute;
+      bottom: 5px;
+      left: 5px;
+      background-color: rgba(0,0,0,0.6);
+      color: white;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+    }
+    .steps-container {
+      margin-top: 20px;
+    }
+    .step {
+      display: none;
+    }
+    .step.active {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>DecorAI</h1>
+    <p>Capture fotos das 4 paredes do seu ambiente para uma análise completa!</p>
+
+    <div class="steps-container">
+      <!-- Passo 1: Captura de fotos -->
+      <div id="step-capture" class="step active">
+        <div class="wall-indicator">
+          <div class="wall-dot active" data-wall="1"></div>
+          <div class="wall-dot" data-wall="2"></div>
+          <div class="wall-dot" data-wall="3"></div>
+          <div class="wall-dot" data-wall="4"></div>
+        </div>
+        
+        <p id="capture-instruction">Capture a foto da parede 1 (frente)</p>
+        
+        <div class="camera-container">
+          <video id="camera-view" autoplay playsinline></video>
+          <div id="capture-button" class="capture-btn"></div>
+        </div>
+        
+        <button id="start-camera">Iniciar Câmera</button>
+        
+        <div class="wall-preview" id="wall-preview">
+          <!-- Aqui serão exibidas as miniaturas das paredes capturadas -->
+        </div>
+      </div>
+      
+      <!-- Passo 2: Configuração e envio -->
+      <div id="step-config" class="step">
+        <h3>Fotos capturadas com sucesso!</h3>
+        
+        <div class="wall-preview" id="wall-preview-final">
+          <!-- Aqui serão exibidas as miniaturas das paredes capturadas -->
+        </div>
+        
+        <label for="acao">O que você deseja?</label><br>
+        <select id="acao">
+          <option value="decorar">Decorar com estilo e inspiração</option>
+          <option value="reorganizar">Reorganizar o ambiente</option>
+        </select><br>
+        
+        <button onclick="enviarFotos()">Gerar Sugestões</button>
+      </div>
+      
+      <!-- Passo 3: Resultado -->
+      <div id="step-result" class="step">
+        <div id="resultado"></div>
+        <button onclick="voltarParaCaptura()">Capturar Novamente</button>
+      </div>
+    </div>
+    
+    <div id="historico" class="historico"></div>
+  </div>
+
+  <script>
+    // Array para armazenar histórico de sugestões
+    const historico = [];
+    
+    // Array para armazenar as fotos das paredes
+    const wallPhotos = {
+      1: null, // Parede 1 (frente)
+      2: null, // Parede 2 (direita)
+      3: null, // Parede 3 (fundo)
+      4: null  // Parede 4 (esquerda)
+    };
+    
+    let currentWall = 1;
+    let stream = null;
+    
+    // Inicializar a câmera
+    document.getElementById('start-camera').addEventListener('click', startCamera);
+    document.getElementById('capture-button').addEventListener('click', captureWall);
+    
+    function startCamera() {
+      const constraints = {
+        video: { facingMode: 'environment' },
+        audio: false
+      };
+      
+      const cameraView = document.getElementById('camera-view');
+      
+      // Parar qualquer stream existente
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+      }
+      
+      // Acessar a câmera
+      navigator.mediaDevices.getUserMedia(constraints)
+        .then(videoStream => {
+          stream = videoStream;
+          cameraView.srcObject = stream;
+          cameraView.style.display = 'block';
+          document.getElementById('start-camera').style.display = 'none';
+        })
+        .catch(err => {
+          console.error('Erro ao acessar a câmera:', err);
+          alert('Não foi possível acessar a câmera. Por favor, verifique as permissões.');
+        });
+    }
+    
+    function captureWall() {
+      const cameraView = document.getElementById('camera-view');
+      
+      // Criar um canvas para capturar a imagem
+      const canvas = document.createElement('canvas');
+      canvas.width = cameraView.videoWidth;
+      canvas.height = cameraView.videoHeight;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(cameraView, 0, 0, canvas.width, canvas.height);
+      
+      // Converter para base64
+      const imageData = canvas.toDataURL('image/jpeg');
+      
+      // Armazenar a foto da parede atual
+      wallPhotos[currentWall] = imageData;
+      
+      // Atualizar a visualização das paredes
+      updateWallPreview();
+      
+      // Avançar para a próxima parede ou finalizar
+      if (currentWall < 4) {
+        currentWall++;
+        updateWallIndicator();
+      } else {
+        // Todas as paredes foram capturadas
+        finishCapture();
+      }
+    }
+    
+    function updateWallIndicator() {
+      // Atualizar o indicador de paredes
+      document.querySelectorAll('.wall-dot').forEach(dot => {
+        dot.classList.remove('active');
+      });
+      document.querySelector(`.wall-dot[data-wall="${currentWall}"]`).classList.add('active');
+      
+      // Atualizar a instrução
+      const wallNames = {
+        1: 'frente',
+        2: 'direita',
+        3: 'fundo',
+        4: 'esquerda'
+      };
+      document.getElementById('capture-instruction').textContent = 
+        `Capture a foto da parede ${currentWall} (${wallNames[currentWall]})`;
+    }
+    
+    function updateWallPreview() {
+      const previewContainer = document.getElementById('wall-preview');
+      previewContainer.innerHTML = '';
+      
+      // Criar miniaturas para cada parede capturada
+      for (let wall = 1; wall <= 4; wall++) {
+        if (wallPhotos[wall]) {
+          const wallItem = document.createElement('div');
+          wallItem.className = 'wall-preview-item';
+          wallItem.innerHTML = `
+            <img src="${wallPhotos[wall]}" alt="Parede ${wall}">
+            <div class="wall-label">Parede ${wall}</div>
+          `;
+          
+          // Permitir recapturar ao clicar na miniatura
+          wallItem.addEventListener('click', () => {
+            currentWall = wall;
+            updateWallIndicator();
+          });
+          
+          previewContainer.appendChild(wallItem);
+        }
+      }
+    }
+    
+    function finishCapture() {
+      // Parar a câmera
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+      }
+      
+      // Atualizar a visualização final
+      const finalPreview = document.getElementById('wall-preview-final');
+      finalPreview.innerHTML = '';
+      
+      for (let wall = 1; wall <= 4; wall++) {
+        const wallItem = document.createElement('div');
+        wallItem.className = 'wall-preview-item';
+        wallItem.innerHTML = `
+          <img src="${wallPhotos[wall]}" alt="Parede ${wall}">
+          <div class="wall-label">Parede ${wall}</div>
+        `;
+        finalPreview.appendChild(wallItem);
+      }
+      
+      // Mudar para o próximo passo
+      document.getElementById('step-capture').classList.remove('active');
+      document.getElementById('step-config').classList.add('active');
+    }
+    
+    function enviarFotos() {
+      const acao = document.getElementById('acao').value;
+      
+      // Verificar se todas as paredes foram capturadas
+      for (let wall = 1; wall <= 4; wall++) {
+        if (!wallPhotos[wall]) {
+          alert(`Por favor, capture a foto da parede ${wall} antes de continuar.`);
+          return;
+        }
+      }
+      
+      // Preparar os dados para envio
+      const form = new FormData();
+      
+      // Converter base64 para blob e adicionar ao form
+      for (let wall = 1; wall <= 4; wall++) {
+        const base64Data = wallPhotos[wall].split(',')[1];
+        const blob = b64toBlob(base64Data, 'image/jpeg');
+        form.append(`imagem_${wall}`, blob, `parede_${wall}.jpg`);
+      }
+      
+      form.append('acao', acao);
+      form.append('modo', 'multi_paredes');
+      
+      // Mudar para o passo de resultado
+      document.getElementById('step-config').classList.remove('active');
+      document.getElementById('step-result').classList.add('active');
+      
+      // Mostrar loading
+      document.getElementById('resultado').innerHTML = '<div class="loading"></div><p>Gerando sugestão, aguarde...</p>';
+      
+      // Enviar para processamento
+      fetch('processar.php', {
+        method: 'POST',
+        body: form
+      })
+      .then(res => {
+        if (!res.ok) {
+          throw new Error('Erro na resposta do servidor');
+        }
+        return res.json();
+      })
+      .then(dados => {
+        // Exibir a imagem gerada
+        const html = `
+          <div class="resultado-container">
+            <h2>Sugestão gerada:</h2>
+            <img src="data:image/png;base64,${dados.imagem}" class="resultado-img">
+            <div class="explicacao">
+              <h3>Descrição:</h3>
+              <p>${dados.descricao}</p>
+            </div>
+          </div>
+        `;
+        document.getElementById('resultado').innerHTML = html;
+        
+        // Adicionar ao histórico
+        adicionarAoHistorico(dados.imagem, dados.descricao);
+      })
+      .catch(err => {
+        console.error(err);
+        document.getElementById('resultado').innerHTML = "Erro ao gerar sugestão. Por favor, tente novamente.";
+      });
+    }
+    
+    function voltarParaCaptura() {
+      // Resetar o estado
+      currentWall = 1;
+      
+      // Voltar para o passo de captura
+      document.getElementById('step-result').classList.remove('active');
+      document.getElementById('step-capture').classList.add('active');
+      
+      // Resetar indicadores
+      updateWallIndicator();
+      document.getElementById('start-camera').style.display = 'block';
+      document.getElementById('camera-view').style.display = 'none';
+    }
+    
+    // Função auxiliar para converter base64 para blob
+    function b64toBlob(b64Data, contentType = '', sliceSize = 512) {
+      const byteCharacters = atob(b64Data);
+      const byteArrays = [];
+      
+      for (let offset = 0; offset < byteCharacters.length; offset += sliceSize) {
+        const slice = byteCharacters.slice(offset, offset + sliceSize);
+        const byteNumbers = new Array(slice.length);
+        
+        for (let i = 0; i < slice.length; i++) {
+          byteNumbers[i] = slice.charCodeAt(i);
+        }
+        
+        const byteArray = new Uint8Array(byteNumbers);
+        byteArrays.push(byteArray);
+      }
+      
+      return new Blob(byteArrays, { type: contentType });
+    }
+    
+    function adicionarAoHistorico(imagemBase64, descricao) {
+      // Limitar histórico a 6 itens
+      if (historico.length >= 6) {
+        historico.shift();
+      }
+      
+      // Adicionar nova sugestão ao histórico
+      historico.push({
+        imagem: imagemBase64,
+        descricao: descricao
+      });
+      
+      // Atualizar exibição do histórico
+      atualizarHistorico();
+    }
+    
+    function atualizarHistorico() {
+      const historicoDiv = document.getElementById('historico');
+      if (historico.length === 0) {
+        historicoDiv.style.display = 'none';
+        return;
+      }
+      
+      historicoDiv.style.display = 'flex';
+      historicoDiv.innerHTML = '<h3 style="width:100%">Histórico de sugestões:</h3>';
+      
+      historico.forEach((item, index) => {
+        const itemDiv = document.createElement('div');
+        itemDiv.className = 'historico-item';
+        itemDiv.innerHTML = `<img src="data:image/png;base64,${item.imagem}" alt="Sugestão ${index + 1}">`;
+        itemDiv.title = item.descricao.substring(0, 100) + '...';
+        
+        // Ao clicar em um item do histórico, exibi-lo novamente
+        itemDiv.onclick = () => {
+          document.getElementById('resultado').innerHTML = `
+            <div class="resultado-container">
+              <h2>Sugestão anterior:</h2>
+              <img src="data:image/png;base64,${item.imagem}" class="resultado-img">
+              <div class="explicacao">
+                <h3>Descrição:</h3>
+                <p>${item.descricao}</p>
+              </div>
+            </div>
+          `;
+        };
+        
+        historicoDiv.appendChild(itemDiv);
+      });
+    }
+  </script>
+</body>
+</html>
