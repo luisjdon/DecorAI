@@ -1,7 +1,7 @@
 <?php
 // Suas chaves de API
-$api_key_gemini = "AIzaSyAhtSTUL7Rz5ex1D_fEA6Gg77FiiBOdQDw"; // Gemini
-$api_key_stability = "sk-AHqLmXkxjBYcoQf7tYxsuk5hQJiEy033kOGONHiEHaZYmTEc"; // Stability
+$api_key_gemini = " API"; // Gemini
+$api_key_stability = "KEY"; // Stability
 
 // Verifica se a pasta de imagens existe
 $pasta_imagens = __DIR__ . '/imagens';
